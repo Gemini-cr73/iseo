@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Virtual environments
+.venv/
+env/
+
+# Environment variables (CRITICAL)
+.env
+docker/.env
+
+# Data / local storage
+data/*.sqlite
+data/chroma/
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
