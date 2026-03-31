@@ -65,7 +65,6 @@ This project demonstrates how to:
 | 🔁 Execution Planning | Step-by-step AI workflow generation |
 | 📎 Grounded Responses | Ensures outputs are structured and controlled |
 | 📈 Evaluation Metrics | Built-in evaluation pipeline for system performance |
-
 ## ⚙️ Example Output
 
 ```json
@@ -75,25 +74,3 @@ This project demonstrates how to:
   "decision": "allow",
   "answer": "I am ISEO, an Intrinsic Safety & Ethics Optimizer."
 }
-
-# Create virtual environment
-python -m venv .venv
-
-# Activate
-.\.venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run API
-uvicorn app.main:app --reload
-
-# Run UI
-streamlit run streamlit_app.py
-
-# Build API
-docker build -f Dockerfile.api -t iseo-api .
-
-# Build UI
-docker build -f Dockerfile.ui -t iseo-ui .
-
