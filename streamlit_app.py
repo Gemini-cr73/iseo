@@ -8,9 +8,12 @@ import streamlit as st
 # -----------------------------
 # Priority:
 # 1. Environment variable (Docker / Azure / Production)
-# 2. Fallback to localhost (local dev)
+# 2. Fallback to Azure API
 
-API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
+DEFAULT_API_BASE_URL = (
+    "https://iseo-api-v3-dxfrh2egggbhegg0.eastus-01.azurewebsites.net"
+)
+API_BASE_URL = os.getenv("API_BASE_URL", DEFAULT_API_BASE_URL)
 
 st.set_page_config(
     page_title="ISEO Dashboard",
@@ -54,7 +57,6 @@ with st.sidebar:
 
     st.header("Configuration")
 
-    # Now uses environment-aware default
     api_base_url = st.text_input("API Base URL", value=API_BASE_URL)
     top_k = st.number_input("Top K", min_value=1, max_value=10, value=3)
     actor = st.text_input("Actor", value="streamlit_user")
@@ -116,22 +118,18 @@ with tab1:
 
             st.success("ISEO completed successfully")
 
-            # Metrics row
             c1, c2, c3, c4 = st.columns(4)
             c1.metric("Status", data.get("status"))
             c2.metric("Risk", data.get("safety", {}).get("risk_level"))
             c3.metric("Decision", data.get("safety", {}).get("decision"))
             c4.metric("Score", data.get("safety", {}).get("risk_score"))
 
-            # Answer
             st.markdown("### Answer")
             st.write(data.get("answer"))
 
-            # Safety
             st.markdown("### Safety Assessment")
             st.json(data.get("safety"))
 
-            # Plan
             st.markdown("### Execution Plan")
             steps = data.get("plan", {}).get("steps", [])
             if steps:
@@ -141,7 +139,6 @@ with tab1:
             else:
                 st.info("No plan steps returned.")
 
-            # Citations
             st.markdown("### Citations")
             citations = data.get("citations", [])
             if citations:
@@ -151,7 +148,6 @@ with tab1:
             else:
                 st.info("No citations returned.")
 
-            # Context Blocks
             st.markdown("### Context Blocks")
             context_blocks = data.get("context_blocks", [])
             if context_blocks:
@@ -161,7 +157,6 @@ with tab1:
             else:
                 st.info("No context blocks returned.")
 
-            # Raw JSON
             st.markdown("### Raw JSON")
             st.json(data)
 
