@@ -17,11 +17,12 @@
 
 > ISEO is a **safety-first AI orchestration system** that evaluates user prompts, applies policy-aware reasoning, and ensures responsible AI outputs through structured execution pipelines.
 
-## 🔗 Live System
+## 🌐 Live System
 
-- 🌐 **UI:** https://iseo.ai-coach-lab.com  
-- ⚙️ **API:** https://iseo-api.ai-coach-lab.com  
-- 📚 **Docs:** https://iseo-api.ai-coach-lab.com/docs  
+- **UI:** https://crb-iseo.streamlit.app  
+- **API Base:** https://iseo-api.ai-coach-lab.com  
+- **API Docs (Swagger):** https://iseo-api.ai-coach-lab.com/docs  
+- **Health Check:** https://iseo-api.ai-coach-lab.com/health
 
 ## 📌 Overview
 
