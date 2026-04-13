@@ -7,13 +7,17 @@ import streamlit as st
 # CONFIG
 # -----------------------------
 # Priority:
-# 1. Environment variable (Docker / Azure / Production)
-# 2. Fallback to Azure API
+# 1. Streamlit secrets
+# 2. Environment variable (Docker / Azure / Production)
+# 3. Fallback to Azure API
 
 DEFAULT_API_BASE_URL = (
     "https://iseo-api-v3-dxfrh2egggbhegg0.eastus-01.azurewebsites.net"
 )
-API_BASE_URL = os.getenv("API_BASE_URL", DEFAULT_API_BASE_URL)
+API_BASE_URL = st.secrets.get(
+    "API_BASE_URL",
+    os.getenv("API_BASE_URL", DEFAULT_API_BASE_URL),
+).rstrip("/")
 
 st.set_page_config(
     page_title="ISEO Dashboard",
