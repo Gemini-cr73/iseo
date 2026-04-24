@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.evaluation import router as evaluation_router
 from app.api.health import router as health_router
@@ -13,13 +14,18 @@ def create_app() -> FastAPI:
 
     app = FastAPI(title="ISEO v2", version="0.4.0")
 
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     app.include_router(health_router, tags=["health"])
     app.include_router(iseo_router, prefix="/iseo", tags=["iseo"])
     app.include_router(evaluation_router, prefix="/evaluation", tags=["evaluation"])
 
-    # Load the RAG router only if its dependencies are available.
-    # This prevents the entire API from failing at startup on Azure
-    # when heavy ML / vector packages are missing or intentionally excluded.
     try:
         from app.api.rag import router as rag_router
 

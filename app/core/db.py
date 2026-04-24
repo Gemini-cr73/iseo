@@ -5,11 +5,24 @@ from pathlib import Path
 from app.core.config import settings
 
 
+def get_db_path() -> str:
+    db_path = getattr(settings, "db_path", None) or os.getenv(
+        "ISEO_DB_PATH", "./data/iseo.sqlite"
+    )
+
+    if db_path.startswith("sqlite:///"):
+        db_path = db_path.replace("sqlite:///", "", 1)
+
+    return db_path
+
+
 def get_conn() -> sqlite3.Connection:
-    db_dir = os.path.dirname(settings.db_path) or "."
+    db_path = get_db_path()
+    db_dir = os.path.dirname(db_path) or "."
+
     Path(db_dir).mkdir(parents=True, exist_ok=True)
 
-    conn = sqlite3.connect(settings.db_path, check_same_thread=False)
+    conn = sqlite3.connect(db_path, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -51,5 +64,4 @@ def init_db() -> None:
         conn.close()
 
     except Exception as exc:
-        # Do not let DB initialization kill the API startup on Azure.
         print(f"Database initialization skipped or failed: {exc}")

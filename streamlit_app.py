@@ -8,16 +8,18 @@ import streamlit as st
 # -----------------------------
 # Priority:
 # 1. Streamlit secrets
-# 2. Environment variable (Docker / Azure / Production)
-# 3. Fallback to Azure API
+# 2. Environment variable (Docker / Railway / Production)
+# 3. Fallback to production API
 
-DEFAULT_API_BASE_URL = (
-    "https://iseo-api-v3-dxfrh2egggbhegg0.eastus-01.azurewebsites.net"
-)
-API_BASE_URL = st.secrets.get(
-    "API_BASE_URL",
-    os.getenv("API_BASE_URL", DEFAULT_API_BASE_URL),
-).rstrip("/")
+DEFAULT_API_BASE_URL = "https://iseo-api.ai-coach-lab.com"
+
+try:
+    API_BASE_URL = st.secrets.get(
+        "API_BASE_URL",
+        os.getenv("API_BASE_URL", DEFAULT_API_BASE_URL),
+    ).rstrip("/")
+except Exception:
+    API_BASE_URL = os.getenv("API_BASE_URL", DEFAULT_API_BASE_URL).rstrip("/")
 
 st.set_page_config(
     page_title="ISEO Dashboard",
@@ -48,6 +50,19 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
+# -----------------------------
+# HELPER FUNCTION
+# -----------------------------
+def show_api_error(response):
+    st.error(f"API Error: {response.status_code}")
+    try:
+        st.code(response.text)
+    except Exception:
+        st.write("No error details returned by API.")
+    st.stop()
+
+
 # -----------------------------
 # SIDEBAR + LOGO
 # -----------------------------
@@ -61,7 +76,7 @@ with st.sidebar:
 
     st.header("Configuration")
 
-    api_base_url = st.text_input("API Base URL", value=API_BASE_URL)
+    api_base_url = st.text_input("API Base URL", value=API_BASE_URL).rstrip("/")
     top_k = st.number_input("Top K", min_value=1, max_value=10, value=3)
     actor = st.text_input("Actor", value="streamlit_user")
 
@@ -70,10 +85,14 @@ with st.sidebar:
 
     if st.button("Check Health"):
         try:
-            res = requests.get(f"{api_base_url}/health", timeout=10)
-            res.raise_for_status()
+            res = requests.get(f"{api_base_url}/health", timeout=15)
+
+            if res.status_code != 200:
+                show_api_error(res)
+
             st.success("API is healthy")
             st.json(res.json())
+
         except Exception as e:
             st.error(f"Health check failed: {e}")
 
@@ -115,31 +134,39 @@ with tab1:
                 res = requests.post(
                     f"{api_base_url}/iseo/run",
                     json=payload,
-                    timeout=60,
+                    timeout=90,
                 )
-                res.raise_for_status()
+
+                if res.status_code != 200:
+                    show_api_error(res)
+
                 data = res.json()
 
             st.success("ISEO completed successfully")
 
             c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Status", data.get("status"))
-            c2.metric("Risk", data.get("safety", {}).get("risk_level"))
-            c3.metric("Decision", data.get("safety", {}).get("decision"))
-            c4.metric("Score", data.get("safety", {}).get("risk_score"))
+            c1.metric("Status", data.get("status", "N/A"))
+            c2.metric("Risk", data.get("safety", {}).get("risk_level", "N/A"))
+            c3.metric("Decision", data.get("safety", {}).get("decision", "N/A"))
+            c4.metric("Score", data.get("safety", {}).get("risk_score", "N/A"))
 
             st.markdown("### Answer")
-            st.write(data.get("answer"))
+            st.write(data.get("answer", "No answer returned."))
 
             st.markdown("### Safety Assessment")
-            st.json(data.get("safety"))
+            st.json(data.get("safety", {}))
 
             st.markdown("### Execution Plan")
             steps = data.get("plan", {}).get("steps", [])
             if steps:
                 for step in steps:
-                    st.write(f"{step.get('step_number')}: {step.get('action')}")
-                    st.caption(step.get("purpose"))
+                    step_number = step.get("step_number", "-")
+                    action = step.get("action", "No action returned")
+                    purpose = step.get("purpose", "")
+
+                    st.write(f"{step_number}: {action}")
+                    if purpose:
+                        st.caption(purpose)
             else:
                 st.info("No plan steps returned.")
 
@@ -148,7 +175,7 @@ with tab1:
             if citations:
                 for c in citations:
                     with st.expander(c.get("title", "source")):
-                        st.write(c.get("snippet"))
+                        st.write(c.get("snippet", "No snippet returned."))
             else:
                 st.info("No citations returned.")
 
@@ -179,29 +206,41 @@ with tab2:
                 res = requests.post(
                     f"{api_base_url}/evaluation/run",
                     params={"top_k": int(top_k)},
-                    timeout=60,
+                    timeout=90,
                 )
-                res.raise_for_status()
+
+                if res.status_code != 200:
+                    show_api_error(res)
+
                 st.success("Evaluation completed successfully")
                 st.json(res.json())
+
         except Exception as e:
             st.error(f"Evaluation failed: {e}")
 
     if st.button("Load Metrics"):
         try:
             res = requests.get(f"{api_base_url}/evaluation/metrics", timeout=30)
-            res.raise_for_status()
+
+            if res.status_code != 200:
+                show_api_error(res)
+
             st.success("Loaded latest metrics")
             st.json(res.json())
+
         except Exception as e:
             st.error(f"Metrics load failed: {e}")
 
     if st.button("Load Report"):
         try:
             res = requests.get(f"{api_base_url}/evaluation/report", timeout=30)
-            res.raise_for_status()
+
+            if res.status_code != 200:
+                show_api_error(res)
+
             st.success("Loaded latest report")
             st.json(res.json())
+
         except Exception as e:
             st.error(f"Report load failed: {e}")
 
@@ -223,10 +262,18 @@ with tab3:
         }
 
         try:
-            res = requests.post(f"{api_base_url}/rag/ingest", json=sample, timeout=60)
-            res.raise_for_status()
+            res = requests.post(
+                f"{api_base_url}/rag/ingest",
+                json=sample,
+                timeout=90,
+            )
+
+            if res.status_code != 200:
+                show_api_error(res)
+
             st.success("Sample document ingested successfully")
             st.json(res.json())
+
         except Exception as e:
             st.error(f"Ingest failed: {e}")
 
@@ -237,10 +284,14 @@ with tab3:
             res = requests.post(
                 f"{api_base_url}/rag/retrieve",
                 json={"question": q, "top_k": int(top_k)},
-                timeout=60,
+                timeout=90,
             )
-            res.raise_for_status()
+
+            if res.status_code != 200:
+                show_api_error(res)
+
             st.success("Retrieve completed successfully")
             st.json(res.json())
+
         except Exception as e:
             st.error(f"Retrieve failed: {e}")
